@@ -8,12 +8,20 @@
 
 import UIKit
 import SceneKit
+public struct PanoramaViewRotationRange {
+    var max : Float
+    var min : Float
+    public init(min: Float, max: Float) {
+        self.max = max
+        self.min = min
+    }
+}
 
 public final class PanoramaView: UIView, SceneLoadable {
     #if (arch(arm) || arch(arm64)) && os(iOS)
     public let device: MTLDevice
     #endif
-
+    
     public var scene: SCNScene? {
         get {
             return scnView.scene
@@ -54,11 +62,10 @@ public final class PanoramaView: UIView, SceneLoadable {
 
     fileprivate lazy var panGestureManager: PanoramaPanGestureManager = {
         let manager = PanoramaPanGestureManager(rotationNode: self.orientationNode.userRotationNode)
-        manager.minimumVerticalRotationAngle = -60 / 180 * .pi
-        manager.maximumVerticalRotationAngle = 60 / 180 * .pi
         return manager
     }()
 
+    
     fileprivate lazy var interfaceOrientationUpdater: InterfaceOrientationUpdater = {
         return InterfaceOrientationUpdater(orientationNode: self.orientationNode)
     }()
@@ -67,11 +74,27 @@ public final class PanoramaView: UIView, SceneLoadable {
     public init(frame: CGRect, device: MTLDevice) {
         self.device = device
         super.init(frame: frame)
+        self.panGestureManager.minimumVerticalRotationAngle = -60 / 180 * .pi
+        self.panGestureManager.maximumVerticalRotationAngle = 60 / 180 * .pi
         addGestureRecognizer(self.panGestureManager.gestureRecognizer)
     }
+    public init(frame: CGRect, device: MTLDevice, deviceOrientationTrackingEnabled: Bool, verticalRotationEnabled: Bool, verticalRotationRange: PanoramaViewRotationRange, horizontalRotationEnabled: Bool, horizontalRotationRange: PanoramaViewRotationRange) {
+        self.device = device
+        super.init(frame: frame)
+        if !deviceOrientationTrackingEnabled {
+            self.orientationNode.deviceOrientationProvider = nil
+        }
+        self.panGestureManager.allowsVerticalRotation = verticalRotationEnabled
+        self.panGestureManager.minimumVerticalRotationAngle  = verticalRotationRange.min / 180 * .pi
+        self.panGestureManager.maximumVerticalRotationAngle = verticalRotationRange.max / 180 * .pi
+        addGestureRecognizer(self.panGestureManager.gestureRecognizer)
+    }
+    
     #else
     public override init(frame: CGRect) {
         super.init(frame: frame)
+        self.panGestureManager.minimumVerticalRotationAngle = -60 / 180 * .pi
+        self.panGestureManager.maximumVerticalRotationAngle = 60 / 180 * .pi
         addGestureRecognizer(self.panGestureManager.gestureRecognizer)
     }
     #endif
