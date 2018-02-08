@@ -6,9 +6,7 @@
 //  Copyright © 2017 eje Inc. All rights reserved.
 //
 
-#if (arch(i386) || arch(x86_64)) && os(iOS)
-    // Not available on iOS Simulator
-#else
+#if (arch(arm) || arch(arm64)) && os(iOS)
 
 import SceneKit
 import Metal
@@ -51,6 +49,7 @@ internal final class StereoRenderer {
             height: outputTexture.height,
             mipmapped: true
         )
+        eyeTextureDescriptor.usage = .renderTarget
 
         eyeRenderingConfigurations = [
             .left: EyeRenderingConfiguration(texture: device.makeTexture(descriptor: eyeTextureDescriptor)),

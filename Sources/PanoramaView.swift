@@ -6,16 +6,22 @@
 //  Copyright © 2017 eje Inc. All rights reserved.
 //
 
-#if (arch(i386) || arch(x86_64)) && os(iOS)
-    // Not available on iOS Simulator
-#else
-
 import UIKit
 import SceneKit
+public struct PanoramaViewRotationRange {
+    var max : Float
+    var min : Float
+    public init(min: Float, max: Float) {
+        self.max = max
+        self.min = min
+    }
+}
 
-public final class PanoramaView: UIView, MediaSceneLoader {
+public final class PanoramaView: UIView, SceneLoadable {
+    #if (arch(arm) || arch(arm64)) && os(iOS)
     public let device: MTLDevice
-
+    #endif
+    
     public var scene: SCNScene? {
         get {
             return scnView.scene
@@ -37,10 +43,14 @@ public final class PanoramaView: UIView, MediaSceneLoader {
     }()
 
     lazy var scnView: SCNView = {
+        #if (arch(arm) || arch(arm64)) && os(iOS)
         let view = SCNView(frame: self.bounds, options: [
             SCNView.Option.preferredRenderingAPI.rawValue: SCNRenderingAPI.metal.rawValue,
             SCNView.Option.preferredDevice.rawValue: self.device
         ])
+        #else
+        let view = SCNView(frame: self.bounds)
+        #endif
         view.backgroundColor = .black
         view.isUserInteractionEnabled = false
         view.delegate = self
@@ -50,31 +60,51 @@ public final class PanoramaView: UIView, MediaSceneLoader {
         return view
     }()
 
-    fileprivate lazy var panGestureManager: PanGestureManager = {
-        let manager = PanGestureManager(rotationNode: self.orientationNode.userRotationNode)
-        manager.minimumVerticalRotationAngle = -60 / 180 * .pi
-        manager.maximumVerticalRotationAngle = 60 / 180 * .pi
+    fileprivate lazy var panGestureManager: PanoramaPanGestureManager = {
+        let manager = PanoramaPanGestureManager(rotationNode: self.orientationNode.userRotationNode)
         return manager
     }()
 
+    
     fileprivate lazy var interfaceOrientationUpdater: InterfaceOrientationUpdater = {
         return InterfaceOrientationUpdater(orientationNode: self.orientationNode)
     }()
 
+    #if (arch(arm) || arch(arm64)) && os(iOS)
     public init(frame: CGRect, device: MTLDevice) {
         self.device = device
-
         super.init(frame: frame)
-
+        self.panGestureManager.minimumVerticalRotationAngle = -60 / 180 * .pi
+        self.panGestureManager.maximumVerticalRotationAngle = 60 / 180 * .pi
         addGestureRecognizer(self.panGestureManager.gestureRecognizer)
     }
+    public init(frame: CGRect, device: MTLDevice, deviceOrientationTrackingEnabled: Bool, verticalRotationEnabled: Bool, verticalRotationRange: PanoramaViewRotationRange, horizontalRotationEnabled: Bool, horizontalRotationRange: PanoramaViewRotationRange) {
+        self.device = device
+        super.init(frame: frame)
+        if !deviceOrientationTrackingEnabled {
+            self.orientationNode.deviceOrientationProvider = nil
+        }
+        self.panGestureManager.allowsVerticalRotation = verticalRotationEnabled
+        self.panGestureManager.minimumVerticalRotationAngle  = verticalRotationRange.min / 180 * .pi
+        self.panGestureManager.maximumVerticalRotationAngle = verticalRotationRange.max / 180 * .pi
+        addGestureRecognizer(self.panGestureManager.gestureRecognizer)
+    }
+    
+    #else
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
+        self.panGestureManager.minimumVerticalRotationAngle = -60 / 180 * .pi
+        self.panGestureManager.maximumVerticalRotationAngle = 60 / 180 * .pi
+        addGestureRecognizer(self.panGestureManager.gestureRecognizer)
+    }
+    #endif
 
     public required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
     deinit {
-        scene = nil
+        orientationNode.removeFromParentNode()
     }
 
     public override func layoutSubviews() {
@@ -92,6 +122,12 @@ public final class PanoramaView: UIView, MediaSceneLoader {
         }
     }
 }
+
+extension PanoramaView: ImageLoadable {}
+
+#if (arch(arm) || arch(arm64)) && os(iOS)
+extension PanoramaView: VideoLoadable {}
+#endif
 
 extension PanoramaView {
     public var sceneRenderer: SCNSceneRenderer {
@@ -132,8 +168,13 @@ extension PanoramaView {
         interfaceOrientationUpdater.updateInterfaceOrientation(with: transitionCoordinator)
     }
 
-    public func resetCenter() {
-        orientationNode.resetCenter(animated: true)
+    public func setNeedsResetRotation(animated: Bool = false) {
+        panGestureManager.stopAnimations()
+        orientationNode.setNeedsResetRotation(animated: animated)
+    }
+
+    public func setNeedsResetRotation(_ sender: Any?) {
+        setNeedsResetRotation(animated: true)
     }
 }
 
@@ -185,5 +226,3 @@ extension PanoramaView: SCNSceneRendererDelegate {
         sceneRendererDelegate?.renderer?(renderer, didRenderScene: scene, atTime: time)
     }
 }
-
-#endif

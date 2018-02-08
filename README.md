@@ -45,7 +45,7 @@ player.play()
 panoramaView.scene = ...
 ```
 
-`PanoramaView` rotates the point of view by device motions and user's pan gesture. To reset rotation, just call `resetCenter()`
+`PanoramaView` rotates the point of view by device motions and user's pan gesture. To reset rotation, just call `setNeedsResetRotation()`
 
 ```swift
 let panoramaView: PanoramaView = ...
@@ -53,7 +53,7 @@ let panoramaView: PanoramaView = ...
 // double tap to re-center the scene
 let recognizer = UITapGestureRecognizer(
   target: panoramaView,
-  action: #selector(PanoramaView.resetCenter))
+  action: #selector(PanoramaView.setNeedsResetRotation(_:)))
 recognizer.numberOfTapsRequired = 2
 
 panoramaView.addGestureRecognizer(recognizer)
@@ -90,6 +90,19 @@ present(stereoViewController, animated: true, completion: nil)
 ![Preview of StereoViewController](https://raw.githubusercontent.com/ejeinc/MetalScope/master/Resources/stereo-preview.jpg)
 
 Check example apps for more samples.
+
+### Simulator
+`PanoramaView`, `StereoView` and `StereoViewController` can also be used on iOS simulator by using alternative initializers.
+
+```swift
+#if arch(arm) || arch(arm64)
+let panoramaView = PanoramaView(frame: view.bounds, device: device)
+#else
+let panoramaView = PanoramaView(frame: view.bounds) // simulator
+#endif
+```
+
+Please note that these classes are significantly limited in functionality on the simulator. For example, `PanoramaView` can display photos, but cannot display videos. For `StereoView` and `StereoViewController`, it is a placeholder and nothing is displayed.
 
 ## Requirements
 

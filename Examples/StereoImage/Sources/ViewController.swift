@@ -22,6 +22,7 @@ final class ViewController: UIViewController {
 
     private func loadPanoramaView() {
         let panoramaView = PanoramaView(frame: view.bounds, device: device)
+        panoramaView.setNeedsResetRotation()
         panoramaView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(panoramaView)
 
@@ -34,8 +35,8 @@ final class ViewController: UIViewController {
         ]
         NSLayoutConstraint.activate(constraints)
 
-        // double tap to reset center
-        let doubleTapGestureRecognizer = UITapGestureRecognizer(target: panoramaView, action: #selector(PanoramaView.resetCenter))
+        // double tap to reset rotation
+        let doubleTapGestureRecognizer = UITapGestureRecognizer(target: panoramaView, action: #selector(PanoramaView.setNeedsResetRotation(_:)))
         doubleTapGestureRecognizer.numberOfTapsRequired = 2
         panoramaView.addGestureRecognizer(doubleTapGestureRecognizer)
 
@@ -71,15 +72,21 @@ final class ViewController: UIViewController {
         loadStereoButton()
     }
 
-    override func viewWillAppear(_ animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+
         panoramaView?.isPlaying = true
     }
 
-    override func viewDidDisappear(_ animated: Bool) {
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+
         panoramaView?.isPlaying = false
     }
 
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+
         panoramaView?.updateInterfaceOrientation(with: coordinator)
     }
 
@@ -88,7 +95,14 @@ final class ViewController: UIViewController {
     }
 
     func presentStereoView() {
+        let introView = UILabel()
+        introView.text = "Place your phone into your Cardboard viewer."
+        introView.textColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        introView.textAlignment = .center
+        introView.backgroundColor = #colorLiteral(red: 0.2745098039, green: 0.3529411765, blue: 0.3921568627, alpha: 1)
+
         let stereoViewController = StereoViewController(device: device)
+        stereoViewController.introductionView = introView
         stereoViewController.scene = panoramaView?.scene
         present(stereoViewController, animated: true, completion: nil)
     }

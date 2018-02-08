@@ -6,9 +6,7 @@
 //  Copyright © 2017 eje Inc. All rights reserved.
 //
 
-#if (arch(i386) || arch(x86_64)) && os(iOS)
-    // Not available on iOS Simulator
-#else
+#if (arch(arm) || arch(arm64)) && os(iOS)
 
 import SceneKit
 
@@ -37,6 +35,7 @@ internal final class StereoScene: SCNScene {
 
         let node = SCNNode()
         node.camera = camera
+        node.position = SCNVector3(0, 0, 0.01)
         self.rootNode.addChildNode(node)
         return node
     }()
