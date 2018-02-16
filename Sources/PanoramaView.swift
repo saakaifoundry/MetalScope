@@ -8,9 +8,10 @@
 
 import UIKit
 import SceneKit
-public struct PanoramaViewRotationRange {
-    var max : Float
-    var min : Float
+
+public final class PanoramaViewRotationRange {
+    public let max : Float
+    public let min : Float
     public init(min: Float, max: Float) {
         self.max = max
         self.min = min
@@ -71,22 +72,11 @@ public final class PanoramaView: UIView, SceneLoadable {
     }()
 
     #if (arch(arm) || arch(arm64)) && os(iOS)
-    public init(frame: CGRect, device: MTLDevice) {
+    @objc public init(frame: CGRect, device: MTLDevice) {
         self.device = device
         super.init(frame: frame)
         self.panGestureManager.minimumVerticalRotationAngle = -60 / 180 * .pi
         self.panGestureManager.maximumVerticalRotationAngle = 60 / 180 * .pi
-        addGestureRecognizer(self.panGestureManager.gestureRecognizer)
-    }
-    public init(frame: CGRect, device: MTLDevice, deviceOrientationTrackingEnabled: Bool, verticalRotationEnabled: Bool, verticalRotationRange: PanoramaViewRotationRange, horizontalRotationEnabled: Bool, horizontalRotationRange: PanoramaViewRotationRange) {
-        self.device = device
-        super.init(frame: frame)
-        if !deviceOrientationTrackingEnabled {
-            self.orientationNode.deviceOrientationProvider = nil
-        }
-        self.panGestureManager.allowsVerticalRotation = verticalRotationEnabled
-        self.panGestureManager.minimumVerticalRotationAngle  = verticalRotationRange.min / 180 * .pi
-        self.panGestureManager.maximumVerticalRotationAngle = verticalRotationRange.max / 180 * .pi
         addGestureRecognizer(self.panGestureManager.gestureRecognizer)
     }
     
@@ -175,6 +165,29 @@ extension PanoramaView {
 
     public func setNeedsResetRotation(_ sender: Any?) {
         setNeedsResetRotation(animated: true)
+    }
+}
+
+extension PanoramaView {
+    @objc public func setVerticalPanningEnabled(isEnabled: Bool = true) {
+        panGestureManager.allowsVerticalRotation = isEnabled
+    }
+    
+    @objc public func setDeviceOrientationTrackingEnabled(isEnabled: Bool = true) {
+        if isEnabled {
+            orientationNode.deviceOrientationProvider = DefaultDeviceOrientationProvider()
+        } else {
+            orientationNode.deviceOrientationProvider = nil
+        }
+    }
+    
+    @objc public func setHorizontalRotationAngles(minAngle: Float, maxAngle: Float) {
+        panGestureManager.minimumHorizontalRotationAngle = minAngle / 360 * .pi
+        panGestureManager.maximumHorizontalRotationAngle = maxAngle / 360 * .pi
+    }
+    
+    @objc public func setFOV(fov: CGFloat) {
+        orientationNode.fieldOfView = fov
     }
 }
 
